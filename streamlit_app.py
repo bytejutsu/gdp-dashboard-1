@@ -11,6 +11,18 @@ st.set_page_config(
     page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
 )
 
+# -----------------------------------------------------------------------------
+# Draw the actual page
+
+# Set the title that appears at the top of the page.
+'''
+# :earth_americas: My Amazing GDP dashboard !!!
+
+Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
+notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
+But it's otherwise a great (and did I mention _free_?) source of data.
+'''
+
 
 # center on Liberty Bell, add marker
 m = folium.Map(location=[39.949610, -75.150282], zoom_start=16)
@@ -71,17 +83,7 @@ def get_gdp_data():
 
 gdp_df = get_gdp_data()
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: My Amazing GDP dashboard !!!
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
 
 # Add some spacing
 ''
