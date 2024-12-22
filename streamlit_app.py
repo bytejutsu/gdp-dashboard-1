@@ -36,9 +36,6 @@ st_data = st_folium(m, width=725)
 DATA_FILENAME = Path(__file__).parent / 'data/crime_data.csv'
 df = pd.read_csv(DATA_FILENAME)
 
-# Afficher les noms des colonnes pour vérifier
-st.write("Noms des colonnes dans le DataFrame :", df.columns.tolist())
-
 # Renommer les colonnes si nécessaire
 df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}, inplace=True)
 
