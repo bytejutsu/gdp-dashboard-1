@@ -5,10 +5,10 @@ import streamlit as st
 import pandas as pd
 from io import StringIO
 import altair as alt
-import joblib
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.preprocessing import LabelEncoder
 
 # -----------------------------------------------------------------------------
 # 1. Configuration de la Page Streamlit
@@ -42,31 +42,19 @@ Toutes les données sont **totalement fictives** et uniquement à des fins de d�
 # -----------------------------------------------------------------------------
 # 3. Chargement et Préparation des Données
 # -----------------------------------------------------------------------------
-@st.cache_data
-def load_data(data_path):
-    df = pd.read_csv(data_path)
-    df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}, inplace=True)
-    df.dropna(subset=['latitude', 'longitude'], inplace=True)
-    df['latitude'] = df['latitude'].astype(float)
-    df['longitude'] = df['longitude'].astype(float)
-    df['Hour'] = df['TimeOfDay'].str.split(':').apply(lambda x: int(x[0]))
-    df = pd.get_dummies(df, columns=['DayOfWeek', 'Zone', 'PersonSex'], drop_first=True)
-    return df
-
 DATA_FILENAME = Path(__file__).parent / 'data/crime_data.csv'
-df = load_data(DATA_FILENAME)
+df = pd.read_csv(DATA_FILENAME)
 
-# Afficher les noms des colonnes pour vérification
-st.write("Noms des colonnes après encodage :", X.columns.tolist())  # Assurez-vous que X est défini
+# Renommer les colonnes si nécessaire pour correspondre aux attentes de Streamlit
+df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}, inplace=True)
 
-# Définir la variable cible et les caractéristiques
-X = df.drop(['IncidentHappened', 'TimeOfDay', 'PersonAge'], axis=1)
-y = df['IncidentHappened']
+# Optionnel : Traiter les valeurs manquantes et convertir les types si nécessaire
+df.dropna(subset=['latitude', 'longitude'], inplace=True)
+df['latitude'] = df['latitude'].astype(float)
+df['longitude'] = df['longitude'].astype(float)
 
-# Séparer les données en ensembles d'entraînement et de test
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+# Ajouter une colonne 'Hour' pour filtrer par heure de la journée
+df['Hour'] = df['TimeOfDay'].str.split(':').apply(lambda x: int(x[0]))
 
 # -----------------------------------------------------------------------------
 # 4. Filtres dans la Sidebar
@@ -74,19 +62,19 @@ X_train, X_test, y_train, y_test = train_test_split(
 st.sidebar.header("Filter Data")
 
 # 4.1 Sélectionner le(s) jour(s) de la semaine
-day_options = [col.replace('DayOfWeek_', '') for col in X.columns if col.startswith('DayOfWeek_')]
+all_days = sorted(df['DayOfWeek'].unique())
 selected_days = st.sidebar.multiselect(
     "Select Day(s) of Week",
-    options=day_options,
-    default=day_options
+    options=all_days,
+    default=all_days
 )
 
 # 4.2 Sélectionner la ou les zones
-zone_options = [col.replace('Zone_', '') for col in X.columns if col.startswith('Zone_')]
+all_zones = sorted(df['Zone'].unique())
 selected_zones = st.sidebar.multiselect(
     "Select Zone(s)",
-    options=zone_options,
-    default=zone_options
+    options=all_zones,
+    default=all_zones
 )
 
 # 4.3 Filtrer par plage horaire (heure uniquement)
@@ -98,22 +86,12 @@ min_hour, max_hour = st.sidebar.slider(
 )
 
 # 4.4 Appliquer les filtres
-# Construire les sélections de colonnes pour les jours et zones
-day_columns = [f'DayOfWeek_{day}' for day in selected_days]
-zone_columns = [f'Zone_{zone}' for zone in selected_zones]
-
 filtered_df = df[
+    (df['DayOfWeek'].isin(selected_days)) &
+    (df['Zone'].isin(selected_zones)) &
     (df['Hour'] >= min_hour) &
     (df['Hour'] <= max_hour)
-].copy()
-
-# Sélectionner les colonnes correspondant aux jours sélectionnés
-if day_columns:
-    filtered_df = filtered_df[filtered_df[day_columns].sum(axis=1) > 0]
-
-# Sélectionner les colonnes correspondant aux zones sélectionnées
-if zone_columns:
-    filtered_df = filtered_df[filtered_df[zone_columns].sum(axis=1) > 0]
+    ].copy()
 
 # -----------------------------------------------------------------------------
 # 5. Vue d'Ensemble des Données Filtrées
@@ -129,33 +107,13 @@ st.subheader("Visualizations")
 
 # 6.1 Incidents par Zone (Graphique en barres)
 st.markdown("### Incidents by Zone")
-
-# Remplacez 'Zone_Zone1' par vos zones réelles. Utilisez toutes les zones disponibles
-all_encoded_zones = [col for col in X.columns if col.startswith('Zone_')]
 incident_counts = (
-    filtered_df.groupby(all_encoded_zones + ['IncidentHappened'])
+    filtered_df.groupby(['Zone', 'IncidentHappened'])
     .size()
     .reset_index(name='count')
 )
 
-# Transformer les données pour avoir une ligne par zone
-incident_counts_melted = incident_counts.melt(
-    id_vars=['IncidentHappened'],
-    value_vars=all_encoded_zones,
-    var_name='Zone',
-    value_name='Present'
-)
-
-# Filtrer pour les zones présentes
-incident_counts_melted = incident_counts_melted[incident_counts_melted['Present'] == 1]
-
-# Grouper par Zone et IncidentHappened
-incident_counts_final = incident_counts_melted.groupby(['Zone', 'IncidentHappened'])['count'].sum().reset_index()
-
-# Simplifier le nom de la zone
-incident_counts_final['Zone'] = incident_counts_final['Zone'].str.replace('Zone_', '')
-
-chart_incidents_by_zone = alt.Chart(incident_counts_final).mark_bar().encode(
+chart_incidents_by_zone = alt.Chart(incident_counts).mark_bar().encode(
     x=alt.X('Zone:N', sort='-y', title='Zone'),
     y=alt.Y('count:Q', title='Count of Records'),
     color=alt.Color('IncidentHappened:N', title='Incident Happened?'),
@@ -202,18 +160,122 @@ else:
     st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
 
 # -----------------------------------------------------------------------------
-# 7. Exploration Supplémentaire
+# 7. Modélisation et Prédiction ML
+# -----------------------------------------------------------------------------
+st.subheader("Machine Learning Model: Predict Incident Happened")
+
+# 7.1 Préparation des Données pour le Modèle
+# Sélectionner les features et la cible
+features = ['PersonAge', 'PersonSex', 'TimeOfDay', 'DayOfWeek', 'Latitude', 'Longitude', 'Zone']
+target = 'IncidentHappened'
+
+# Encodage des variables catégorielles
+le_sex = LabelEncoder()
+le_day = LabelEncoder()
+le_zone = LabelEncoder()
+
+df_model = df.copy()
+df_model['PersonSexEncoded'] = le_sex.fit_transform(df_model['PersonSex'])
+df_model['DayOfWeekEncoded'] = le_day.fit_transform(df_model['DayOfWeek'])
+df_model['ZoneEncoded'] = le_zone.fit_transform(df_model['Zone'])
+
+# Convertir TimeOfDay en minutes depuis minuit pour une meilleure interprétation
+df_model['TimeOfDayMinutes'] = df_model['TimeOfDay'].apply(lambda x: int(x.split(':')[0]) * 60 + int(x.split(':')[1]))
+
+# Définir les features finales
+X = df_model[
+    ['PersonAge', 'PersonSexEncoded', 'DayOfWeekEncoded', 'TimeOfDayMinutes', 'Latitude', 'Longitude', 'ZoneEncoded']]
+y = df_model['IncidentHappened']
+
+# 7.2 Entraînement du Modèle
+# Séparer les données en ensemble d'entraînement et de test
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialiser et entraîner le modèle de décision
+clf = DecisionTreeClassifier(random_state=42)
+clf.fit(X_train, y_train)
+
+# 7.3 Évaluation du Modèle
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred, output_dict=True)
+
+st.write(f"**Model Accuracy:** {accuracy:.2f}")
+
+# Afficher le rapport de classification
+report_df = pd.DataFrame(report).transpose()
+st.write("**Classification Report:**")
+st.dataframe(report_df)
+
+# 7.4 Interface Utilisateur pour la Prédiction
+st.markdown("### Predict New Incident")
+
+# Création des inputs pour la prédiction
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    input_age = st.number_input("Person Age", min_value=0, max_value=120, value=30)
+
+with col2:
+    input_sex = st.selectbox("Person Sex", options=['M', 'F'])
+
+with col3:
+    input_day = st.selectbox("Day of Week", options=sorted(df['DayOfWeek'].unique()))
+
+with col1:
+    input_zone = st.selectbox("Zone", options=sorted(df['Zone'].unique()))
+
+with col2:
+    input_time = st.time_input("Time of Day", value=pd.to_datetime("12:00").time())
+
+with col3:
+    input_latitude = st.number_input("Latitude", value=36.8)
+    input_longitude = st.number_input("Longitude", value=10.1)
+
+# Bouton de prédiction
+if st.button("Predict Incident"):
+    # Préparer les données d'entrée
+    input_sex_encoded = le_sex.transform([input_sex])[0]
+    input_day_encoded = le_day.transform([input_day])[0]
+    input_zone_encoded = le_zone.transform([input_zone])[0]
+    input_time_minutes = input_time.hour * 60 + input_time.minute
+
+    input_data = pd.DataFrame({
+        'PersonAge': [input_age],
+        'PersonSexEncoded': [input_sex_encoded],
+        'DayOfWeekEncoded': [input_day_encoded],
+        'TimeOfDayMinutes': [input_time_minutes],
+        'Latitude': [input_latitude],
+        'Longitude': [input_longitude],
+        'ZoneEncoded': [input_zone_encoded]
+    })
+
+    # Prédire
+    prediction = clf.predict(input_data)[0]
+    prediction_proba = clf.predict_proba(input_data)[0]
+
+    # Interprétation de la prédiction
+    if prediction == 1:
+        st.success("**Prediction:** An incident is likely to happen.")
+    else:
+        st.info("**Prediction:** No incident is likely to happen.")
+
+    st.write(f"**Probability of No Incident:** {prediction_proba[0]:.2f}")
+    st.write(f"**Probability of Incident:** {prediction_proba[1]:.2f}")
+
+# -----------------------------------------------------------------------------
+# 8. Exploration Supplémentaire
 # -----------------------------------------------------------------------------
 st.subheader("Incidents by Age and Sex")
 sex_age_counts = (
-    filtered_df.groupby(['PersonSex_Male', 'PersonAge', 'IncidentHappened'])
+    filtered_df.groupby(['PersonSex', 'PersonAge', 'IncidentHappened'])
     .size()
     .reset_index(name='count')
 )
 
 # Afficher dans un tableau croisé dynamique
 pivot_sex_age = sex_age_counts.pivot_table(
-    index=['PersonSex_Male', 'PersonAge'],
+    index=['PersonSex', 'PersonAge'],
     columns='IncidentHappened',
     values='count',
     aggfunc='sum',
@@ -226,3 +288,29 @@ st.write("""
 **Note** : Avec un vrai jeu de données, vous pourriez construire des visualisations plus avancées
 ou des modèles prédictifs en utilisant les fonctionnalités ci-dessus.
 """)
+
+# -----------------------------------------------------------------------------
+# 9. (Optionnel) Carte Folium Supplémentaire
+# -----------------------------------------------------------------------------
+# Si vous souhaitez utiliser Folium pour des visualisations de cartes plus avancées,
+# vous pouvez décommenter et utiliser le code suivant.
+
+# st.markdown("### Folium Map of Incidents")
+# if not filtered_df.empty:
+#     # Centrer la carte sur la moyenne des latitudes et longitudes filtrées
+#     mean_lat = filtered_df['latitude'].mean()
+#     mean_lon = filtered_df['longitude'].mean()
+#     m_incidents = folium.Map(location=[mean_lat, mean_lon], zoom_start=12)
+
+#     # Ajouter des marqueurs pour chaque incident
+#     for idx, row in filtered_df.iterrows():
+#         folium.Marker(
+#             location=[row['latitude'], row['longitude']],
+#             popup=f"Incident: {row['IncidentHappenedStr']}",
+#             tooltip=row['IncidentHappenedStr']
+#         ).add_to(m_incidents)
+
+#     # Rendre la carte Folium dans Streamlit
+#     st_folium(m_incidents, width=700)
+# else:
+#     st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
