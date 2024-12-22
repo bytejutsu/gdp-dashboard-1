@@ -17,10 +17,9 @@ st.set_page_config(
 
 # Set the title that appears at the top of the page.
 '''
-# :earth_americas: SafeBuddy Dashboard 
+# :earth_americas: SafeBuddy Dashboard
 An Amazing Dashboard using ML that displays the potential security and safety risks to try to mitigate them.
 '''
-
 
 # center on Liberty Bell, add marker
 m = folium.Map(location=[36.847175, 10.199055], zoom_start=13)
@@ -34,8 +33,19 @@ st_data = st_folium(m, width=725)
 # -----------------------------------------------------------------------------
 
 # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-DATA_FILENAME = Path(__file__).parent/'data/crime_data.csv'
+DATA_FILENAME = Path(__file__).parent / 'data/crime_data.csv'
 df = pd.read_csv(DATA_FILENAME)
+
+# Afficher les noms des colonnes pour vérifier
+st.write("Noms des colonnes dans le DataFrame :", df.columns.tolist())
+
+# Renommer les colonnes si nécessaire
+df.rename(columns={'latitude': 'Latitude', 'longitude': 'Longitude'}, inplace=True)
+st.write("Noms des colonnes après renommage :", df.columns.tolist())
+
+# Vérifier les types de données et les valeurs manquantes
+st.write("Types de données :", df.dtypes)
+st.write("Valeurs manquantes :", df[['Latitude', 'Longitude']].isnull().sum())
 
 # --------------------------------------------------
 # 3. App Title and Description
@@ -135,7 +145,11 @@ filtered_df['IncidentHappenedStr'] = filtered_df['IncidentHappened'].apply(
     lambda x: "Incident" if x == 1 else "No Incident"
 )
 
-st.map(filtered_df[['Latitude', 'Longitude']])
+# Vérifier si le DataFrame filtré contient des données avant d'afficher la carte
+if not filtered_df.empty:
+    st.map(filtered_df[['Latitude', 'Longitude']])
+else:
+    st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
 
 # --------------------------------------------------
 # 7. Additional Exploration
