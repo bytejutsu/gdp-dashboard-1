@@ -22,7 +22,7 @@ An Amazing Dashboard using ML that displays the potential security and safety ri
 
 
 # center on Liberty Bell, add marker
-m = folium.Map(location=[36.847175, 10.199055], zoom_start=10)
+m = folium.Map(location=[36.847175, 10.199055], zoom_start=13)
 folium.Marker(
     [36.847175, 10.199055], popup="UIT", tooltip="Current Location"
 ).add_to(m)
