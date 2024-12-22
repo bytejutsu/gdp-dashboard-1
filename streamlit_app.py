@@ -22,16 +22,13 @@ Un tableau de bord incroyable utilisant le ML qui affiche les risques potentiels
 '''
 
 # Centrer sur Liberty Bell et ajouter un marqueur
-m = folium.Map(location=[36.847175, 10.199055], zoom_start=13)
-folium.Marker(
-    [36.847175, 10.199055], popup="UIT", tooltip="Current Location"
-).add_to(m)
+#m = folium.Map(location=[36.847175, 10.199055], zoom_start=13)
+#folium.Marker(
+#    [36.847175, 10.199055], popup="UIT", tooltip="Current Location"
+#).add_to(m)
 
 # Rendre la carte Folium dans Streamlit
-st_data = st_folium(m, width=725)
-
-# -----------------------------------------------------------------------------
-
+# st_data = st_folium(m, width=725)
 # Charger les données CSV
 DATA_FILENAME = Path(__file__).parent / 'data/crime_data.csv'
 df = pd.read_csv(DATA_FILENAME)
@@ -43,21 +40,6 @@ df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}, inplace=Tr
 df.dropna(subset=['latitude', 'longitude'], inplace=True)
 df['latitude'] = df['latitude'].astype(float)
 df['longitude'] = df['longitude'].astype(float)
-
-# --------------------------------------------------
-# 3. Titre et Description de l'App
-# --------------------------------------------------
-st.title("Crime Incidents in the Governorate of Tunis (Mock Data)")
-st.write("""
-Cette application **Streamlit** démontre comment nous pourrions explorer et visualiser un jeu de données
-de dossiers d'incidents criminels fictifs basés sur :
-- **Âge et sexe de la personne**
-- **Localisation (latitude, longitude, zone)**
-- **Heure et jour de la semaine**
-- **Incident ou non (binaire)**
-
-Toutes les données sont **totalement fictives** et uniquement à des fins de démonstration.
-""")
 
 # --------------------------------------------------
 # 4. Filtres dans la Sidebar
@@ -86,6 +68,39 @@ filtered_df = df[
     (df['Hour'] >= min_hour) &
     (df['Hour'] <= max_hour)
 ].copy()
+
+# 6.3 Carte des Incidents
+st.markdown("### Map of Locations (Latitude & Longitude)")
+
+# Convert IncidentHappened en chaîne pour le codage couleur (optionnel)
+filtered_df['IncidentHappenedStr'] = filtered_df['IncidentHappened'].apply(
+    lambda x: "Incident" if x == 1 else "No Incident"
+)
+
+# Vérifier si le DataFrame filtré contient des données avant d'afficher la carte
+if not filtered_df.empty:
+    st.map(filtered_df[['latitude', 'longitude']])
+else:
+    st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
+
+# -----------------------------------------------------------------------------
+
+# --------------------------------------------------
+# 3. Titre et Description de l'App
+# --------------------------------------------------
+st.title("Crime Incidents in the Governorate of Tunis (Mock Data)")
+st.write("""
+Cette application **Streamlit** démontre comment nous pourrions explorer et visualiser un jeu de données
+de dossiers d'incidents criminels fictifs basés sur :
+- **Âge et sexe de la personne**
+- **Localisation (latitude, longitude, zone)**
+- **Heure et jour de la semaine**
+- **Incident ou non (binaire)**
+
+Toutes les données sont **totalement fictives** et uniquement à des fins de démonstration.
+""")
+
+
 
 # --------------------------------------------------
 # 5. Vue d'ensemble des données
@@ -133,20 +148,6 @@ line_chart = alt.Chart(incidents_by_hour).mark_line().encode(
 ).properties(width=600, height=400)
 
 st.altair_chart(line_chart, use_container_width=True)
-
-# 6.3 Carte des Incidents
-st.markdown("### Map of Locations (Latitude & Longitude)")
-
-# Convert IncidentHappened en chaîne pour le codage couleur (optionnel)
-filtered_df['IncidentHappenedStr'] = filtered_df['IncidentHappened'].apply(
-    lambda x: "Incident" if x == 1 else "No Incident"
-)
-
-# Vérifier si le DataFrame filtré contient des données avant d'afficher la carte
-if not filtered_df.empty:
-    st.map(filtered_df[['latitude', 'longitude']])
-else:
-    st.warning("Aucune donnée disponible pour les filtres sélectionnés.")
 
 # --------------------------------------------------
 # 7. Exploration Supplémentaire
