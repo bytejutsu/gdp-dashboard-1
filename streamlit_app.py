@@ -166,7 +166,7 @@ st.subheader("Machine Learning Model: Predict Incident Happened")
 
 # 7.1 Préparation des Données pour le Modèle
 # Sélectionner les features et la cible
-features = ['PersonAge', 'PersonSex', 'TimeOfDay', 'DayOfWeek', 'Latitude', 'Longitude', 'Zone']
+features = ['PersonAge', 'PersonSex', 'TimeOfDay', 'DayOfWeek', 'latitude', 'longitude', 'Zone']
 target = 'IncidentHappened'
 
 # Encodage des variables catégorielles
@@ -184,7 +184,7 @@ df_model['TimeOfDayMinutes'] = df_model['TimeOfDay'].apply(lambda x: int(x.split
 
 # Définir les features finales
 X = df_model[
-    ['PersonAge', 'PersonSexEncoded', 'DayOfWeekEncoded', 'TimeOfDayMinutes', 'Latitude', 'Longitude', 'ZoneEncoded']]
+    ['PersonAge', 'PersonSexEncoded', 'DayOfWeekEncoded', 'TimeOfDayMinutes', 'latitude', 'longitude', 'ZoneEncoded']]
 y = df_model['IncidentHappened']
 
 # 7.2 Entraînement du Modèle
@@ -229,8 +229,8 @@ with col2:
     input_time = st.time_input("Time of Day", value=pd.to_datetime("12:00").time())
 
 with col3:
-    input_latitude = st.number_input("Latitude", value=36.8)
-    input_longitude = st.number_input("Longitude", value=10.1)
+    input_latitude = st.number_input("latitude", value=36.8)
+    input_longitude = st.number_input("longitude", value=10.1)
 
 # Bouton de prédiction
 if st.button("Predict Incident"):
@@ -245,8 +245,8 @@ if st.button("Predict Incident"):
         'PersonSexEncoded': [input_sex_encoded],
         'DayOfWeekEncoded': [input_day_encoded],
         'TimeOfDayMinutes': [input_time_minutes],
-        'Latitude': [input_latitude],
-        'Longitude': [input_longitude],
+        'latitude': [input_latitude],
+        'longitude': [input_longitude],
         'ZoneEncoded': [input_zone_encoded]
     })
 
