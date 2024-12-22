@@ -1,0 +1,31 @@
+RecordID,PersonAge,PersonSex,TimeOfDay,DayOfWeek,Latitude,Longitude,Zone,IncidentHappened
+1,24,F,08:14,Monday,36.8502,10.0953,Cité Ettadhamen,1
+2,37,M,22:30,Saturday,36.8511,10.0999,Cité Ettadhamen,0
+3,19,F,15:45,Wednesday,36.8220,10.1455,Jbal Lahmar,1
+4,42,M,02:10,Sunday,36.8235,10.1467,Jbal Lahmar,1
+5,29,F,12:05,Tuesday,36.8065,10.0395,Oued Ellil,0
+6,53,M,19:20,Friday,36.8072,10.0411,Oued Ellil,1
+7,34,F,17:50,Thursday,36.7997,10.1772,Bab El Bhar,0
+8,26,M,03:15,Monday,36.8008,10.1789,Bab El Bhar,1
+9,61,F,14:30,Wednesday,36.7685,10.1143,Sidi Hassine,0
+10,21,M,01:00,Saturday,36.7676,10.1138,Sidi Hassine,1
+11,44,F,07:25,Tuesday,36.7482,10.1897,El Kabaria,0
+12,23,M,22:50,Friday,36.7465,10.1883,El Kabaria,1
+13,38,M,20:35,Sunday,36.8091,10.1330,Le Bardo,0
+14,27,F,10:00,Thursday,36.8083,10.1342,Le Bardo,0
+15,31,M,13:15,Monday,36.8786,10.3251,La Marsa,1
+16,45,M,21:45,Saturday,36.8790,10.3240,La Marsa,0
+17,19,F,16:10,Tuesday,36.8514,10.3239,Carthage,0
+18,39,F,23:59,Friday,36.8522,10.3244,Carthage,1
+19,33,M,18:25,Wednesday,36.7932,10.1762,Sidi El Béchir,0
+20,55,F,06:40,Sunday,36.7941,10.1771,Sidi El Béchir,0
+21,22,M,15:05,Thursday,36.8020,10.1507,El Omrane,1
+22,47,F,03:35,Tuesday,36.8125,10.1578,El Omrane,1
+23,36,M,11:50,Monday,36.8302,10.1497,El Menzah,0
+24,28,F,00:10,Saturday,36.8293,10.1509,El Menzah,1
+25,60,M,09:45,Sunday,36.7688,10.1385,Séjoumi,0
+26,18,F,23:05,Thursday,36.7659,10.1391,Séjoumi,1
+27,49,M,12:15,Wednesday,36.7951,10.1268,Ezzouhour,0
+28,54,F,19:45,Friday,36.7962,10.1259,Ezzouhour,1
+29,25,M,16:30,Tuesday,36.8135,10.1379,Cité Ibn Khaldoun,0
+30,33,F,02:50,Monday,36.8139,10.1385,Cité Ibn Khaldoun,1
