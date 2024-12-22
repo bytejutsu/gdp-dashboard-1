@@ -22,9 +22,9 @@ An Amazing Dashboard using ML that displays the potential security and safety ri
 
 
 # center on Liberty Bell, add marker
-m = folium.Map(location=[39.949610, -75.150282], zoom_start=16)
+m = folium.Map(location=[36.847175, 10.199055], zoom_start=10)
 folium.Marker(
-    [39.949610, -75.150282], popup="Liberty Bell", tooltip="Liberty Bell"
+    [36.847175, 10.199055], popup="UIT", tooltip="Current Location"
 ).add_to(m)
 
 # call to render Folium map in Streamlit
