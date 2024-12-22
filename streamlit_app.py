@@ -1,5 +1,6 @@
 from pathlib import Path
 import folium
+from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import streamlit as st
 import pandas as pd
@@ -55,6 +56,38 @@ df['longitude'] = df['longitude'].astype(float)
 
 # Ajouter une colonne 'Hour' pour filtrer par heure de la journée
 df['Hour'] = df['TimeOfDay'].str.split(':').apply(lambda x: int(x[0]))
+
+
+# -----------------------------------------------------------------------------
+# 3. Chargement et Préparation des Données
+# -----------------------------------------------------------------------------
+# Load the data
+DATA_FILENAME = Path(__file__).parent / 'data/crime_rate_data.csv'
+df2 = pd.read_csv(DATA_FILENAME)
+
+# Rename columns for consistency
+df2.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude', 'CrimeIncidents': 'crime_incidents'}, inplace=True)
+
+# Handle missing values and type conversion
+df2.dropna(subset=['latitude', 'longitude', 'crime_incidents'], inplace=True)
+df2['latitude'] = df2['latitude'].astype(float)
+df2['longitude'] = df2['longitude'].astype(float)
+df2['crime_incidents'] = df2['crime_incidents'].astype(int)
+
+# Create a Streamlit app
+st.title("Crime Incident Heatmap")
+
+# Initialize a folium map centered at an average location
+m = folium.Map(location=[df2['latitude'].mean(), df2['longitude'].mean()], zoom_start=12)
+
+# Prepare data for the heatmap
+heat_data = df2[['latitude', 'longitude', 'crime_incidents']].values.tolist()
+
+# Add heatmap to the map
+HeatMap(heat_data, radius=15).add_to(m)
+
+# Render the map in Streamlit
+st_data = st._legacy_folium_static(m)
 
 # -----------------------------------------------------------------------------
 # 4. Filtres dans la Sidebar
