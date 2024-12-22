@@ -39,7 +39,6 @@ de dossiers d'incidents criminels fictifs basés sur :
 Toutes les données sont **totalement fictives** et uniquement à des fins de démonstration.
 """)
 
-
 # -----------------------------------------------------------------------------
 # 3. Chargement et Préparation des Données
 # -----------------------------------------------------------------------------
@@ -54,9 +53,11 @@ def load_data(data_path):
     df = pd.get_dummies(df, columns=['DayOfWeek', 'Zone', 'PersonSex'], drop_first=True)
     return df
 
-
 DATA_FILENAME = Path(__file__).parent / 'data/crime_data.csv'
 df = load_data(DATA_FILENAME)
+
+# Afficher les noms des colonnes pour vérification
+st.write("Noms des colonnes après encodage :", X.columns.tolist())  # Assurez-vous que X est défini
 
 # Définir la variable cible et les caractéristiques
 X = df.drop(['IncidentHappened', 'TimeOfDay', 'PersonAge'], axis=1)
@@ -73,7 +74,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 st.sidebar.header("Filter Data")
 
 # 4.1 Sélectionner le(s) jour(s) de la semaine
-day_options = [col.replace('DayOfWeek_', '') for col in X.columns if 'DayOfWeek_' in col]
+day_options = [col.replace('DayOfWeek_', '') for col in X.columns if col.startswith('DayOfWeek_')]
 selected_days = st.sidebar.multiselect(
     "Select Day(s) of Week",
     options=day_options,
@@ -81,7 +82,7 @@ selected_days = st.sidebar.multiselect(
 )
 
 # 4.2 Sélectionner la ou les zones
-zone_options = [col.replace('Zone_', '') for col in X.columns if 'Zone_' in col]
+zone_options = [col.replace('Zone_', '') for col in X.columns if col.startswith('Zone_')]
 selected_zones = st.sidebar.multiselect(
     "Select Zone(s)",
     options=zone_options,
@@ -104,7 +105,7 @@ zone_columns = [f'Zone_{zone}' for zone in selected_zones]
 filtered_df = df[
     (df['Hour'] >= min_hour) &
     (df['Hour'] <= max_hour)
-    ].copy()
+].copy()
 
 # Sélectionner les colonnes correspondant aux jours sélectionnés
 if day_columns:
@@ -128,18 +129,37 @@ st.subheader("Visualizations")
 
 # 6.1 Incidents par Zone (Graphique en barres)
 st.markdown("### Incidents by Zone")
-# Remplacez 'Zone_<Zone1>' par vos zones réelles
+
+# Remplacez 'Zone_Zone1' par vos zones réelles. Utilisez toutes les zones disponibles
+all_encoded_zones = [col for col in X.columns if col.startswith('Zone_')]
 incident_counts = (
-    filtered_df.groupby(['Zone_<Zone1>', 'IncidentHappened'])
+    filtered_df.groupby(all_encoded_zones + ['IncidentHappened'])
     .size()
     .reset_index(name='count')
 )
 
-chart_incidents_by_zone = alt.Chart(incident_counts).mark_bar().encode(
-    x=alt.X('Zone_<Zone1>:N', sort='-y', title='Zone'),  # Ajustez selon vos zones réelles
+# Transformer les données pour avoir une ligne par zone
+incident_counts_melted = incident_counts.melt(
+    id_vars=['IncidentHappened'],
+    value_vars=all_encoded_zones,
+    var_name='Zone',
+    value_name='Present'
+)
+
+# Filtrer pour les zones présentes
+incident_counts_melted = incident_counts_melted[incident_counts_melted['Present'] == 1]
+
+# Grouper par Zone et IncidentHappened
+incident_counts_final = incident_counts_melted.groupby(['Zone', 'IncidentHappened'])['count'].sum().reset_index()
+
+# Simplifier le nom de la zone
+incident_counts_final['Zone'] = incident_counts_final['Zone'].str.replace('Zone_', '')
+
+chart_incidents_by_zone = alt.Chart(incident_counts_final).mark_bar().encode(
+    x=alt.X('Zone:N', sort='-y', title='Zone'),
     y=alt.Y('count:Q', title='Count of Records'),
     color=alt.Color('IncidentHappened:N', title='Incident Happened?'),
-    tooltip=['Zone_<Zone1>', 'IncidentHappened', 'count']  # Ajustez selon vos zones réelles
+    tooltip=['Zone', 'IncidentHappened', 'count']
 ).properties(
     width=600,
     height=400
@@ -206,72 +226,3 @@ st.write("""
 **Note** : Avec un vrai jeu de données, vous pourriez construire des visualisations plus avancées
 ou des modèles prédictifs en utilisant les fonctionnalités ci-dessus.
 """)
-
-# -----------------------------------------------------------------------------
-# 8. Prédiction des Incidents
-# -----------------------------------------------------------------------------
-st.sidebar.header("Predict New Incident")
-
-
-@st.cache_resource
-def load_model(model_path):
-    return joblib.load(model_path)
-
-
-model = load_model(Path(__file__).parent / 'model/random_forest_model.joblib')
-
-with st.sidebar.form(key='prediction_form'):
-    st.write("### Enter Details to Predict Incident")
-
-    # Entrées utilisateur
-    age = st.number_input("Age", min_value=0, max_value=120, value=30)
-    sex = st.selectbox("Sex", options=['Male', 'Female'])
-    day_of_week = st.selectbox("Day of Week", options=day_options)
-    zone = st.selectbox("Zone", options=zone_options)
-    hour = st.slider("Hour of Day", min_value=0, max_value=23, value=12)
-    latitude = st.number_input("Latitude", value=36.847175)
-    longitude = st.number_input("Longitude", value=10.199055)
-
-    # Soumettre le formulaire
-    submit_button = st.form_submit_button(label='Predict')
-
-if submit_button:
-    # Préparer les données d'entrée pour le modèle
-    input_data = {
-        'Hour': hour,
-        'latitude': latitude,
-        'longitude': longitude,
-        'PersonAge': age,
-        'PersonSex_Male': 1 if sex == 'Male' else 0,
-        'DayOfWeek_Monday': 1 if day_of_week == 'Monday' else 0,
-        'DayOfWeek_Saturday': 1 if day_of_week == 'Saturday' else 0,
-        'DayOfWeek_Sunday': 1 if day_of_week == 'Sunday' else 0,
-        'DayOfWeek_Thursday': 1 if day_of_week == 'Thursday' else 0,
-        'DayOfWeek_Tuesday': 1 if day_of_week == 'Tuesday' else 0,
-        'DayOfWeek_Wednesday': 1 if day_of_week == 'Wednesday' else 0,
-        'Zone_<Zone1>': 1 if zone == '<Zone1>' else 0,  # Remplacez <Zone1> par vos zones réelles
-        'Zone_<Zone2>': 1 if zone == '<Zone2>' else 0,
-        # Ajoutez d'autres zones selon votre dataset
-    }
-
-    # Convertir en DataFrame
-    input_df = pd.DataFrame([input_data])
-
-    # Assurez-vous que toutes les colonnes du modèle sont présentes
-    model_features = X.columns
-    for col in model_features:
-        if col not in input_df.columns:
-            input_df[col] = 0
-
-    # Réorganiser les colonnes
-    input_df = input_df[model_features]
-
-    # Faire la prédiction
-    prediction = model.predict(input_df)[0]
-    prediction_proba = model.predict_proba(input_df)[0][1]
-
-    # Afficher le résultat
-    if prediction == 1:
-        st.success(f"**Prediction:** Incident is likely to occur. (Probability: {prediction_proba:.2f})")
-    else:
-        st.info(f"**Prediction:** No incident is likely to occur. (Probability: {1 - prediction_proba:.2f})")
