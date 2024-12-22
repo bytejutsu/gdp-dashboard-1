@@ -87,7 +87,7 @@ heat_data = df2[['latitude', 'longitude', 'crime_incidents']].values.tolist()
 HeatMap(heat_data, radius=15).add_to(m)
 
 # Render the map in Streamlit
-st_data = st._legacy_folium_static(m)
+st.map(m)
 
 # -----------------------------------------------------------------------------
 # 4. Filtres dans la Sidebar
