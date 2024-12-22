@@ -74,20 +74,19 @@ df2['latitude'] = df2['latitude'].astype(float)
 df2['longitude'] = df2['longitude'].astype(float)
 df2['crime_incidents'] = df2['crime_incidents'].astype(int)
 
-# Create a Streamlit app
-st.title("Crime Incident Heatmap")
-
-# Initialize a folium map centered at an average location
-m = folium.Map(location=[df2['latitude'].mean(), df2['longitude'].mean()], zoom_start=12)
-
-# Prepare data for the heatmap
-heat_data = df2[['latitude', 'longitude', 'crime_incidents']].values.tolist()
-
-# Add heatmap to the map
-HeatMap(heat_data, radius=15).add_to(m)
-
-# Render the map in Streamlit
-st.map(m)
+from folium.plugins import HeatMap
+# Visualisation de la Heatmap des Incidents
+# -----------------------------------------------------------------------------
+st.subheader("Heatmap of Crime Incidents by Zone")
+# Préparer les données pour la heatmap: [latitude, longitude, weight]
+heat_data = df2[['latitude', 'longitude', 'CrimeIncidents']].values.tolist()
+# Créer une carte centrée sur Tunis
+heatmap_center = [df2['latitude'].mean(), df2['longitude'].mean()]
+m_heat = folium.Map(location=heatmap_center, zoom_start=11)
+# Ajouter la heatmap
+HeatMap(heat_data, radius=15, max_zoom=13).add_to(m_heat)
+# Rendre la heatmap dans Streamlit
+st_folium(m_heat, width=700)
 
 # -----------------------------------------------------------------------------
 # 4. Filtres dans la Sidebar
