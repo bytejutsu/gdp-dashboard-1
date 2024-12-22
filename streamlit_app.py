@@ -41,11 +41,6 @@ st.write("Noms des colonnes dans le DataFrame :", df.columns.tolist())
 
 # Renommer les colonnes si nécessaire
 df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}, inplace=True)
-st.write("Noms des colonnes après renommage :", df.columns.tolist())
-
-# Vérifier les types de données et les valeurs manquantes
-st.write("Types de données :", df.dtypes)
-st.write("Valeurs manquantes :", df[['latitude', 'longitude']].isnull().sum())
 
 # Optionnel : Traiter les valeurs manquantes et convertir les types si nécessaire
 df.dropna(subset=['latitude', 'longitude'], inplace=True)
