@@ -79,7 +79,7 @@ from folium.plugins import HeatMap
 # -----------------------------------------------------------------------------
 st.subheader("Heatmap of Crime Incidents by Zone")
 # Préparer les données pour la heatmap: [latitude, longitude, weight]
-heat_data = df2[['latitude', 'longitude', 'CrimeIncidents']].values.tolist()
+heat_data = df2[['latitude', 'longitude', 'crime_incidents']].values.tolist()
 # Créer une carte centrée sur Tunis
 heatmap_center = [df2['latitude'].mean(), df2['longitude'].mean()]
 m_heat = folium.Map(location=heatmap_center, zoom_start=11)
